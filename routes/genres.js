@@ -1,67 +1,66 @@
 const express = require('express');
-const router = express.Router();
+const {Genre, validate} = require('../models/Genre');
+const router = new express.Router();
+const debug = require('debug')('app:genre');
 
-const genres = [
-  {id: 0, name: 'Action'},
-  {id: 1, name: 'Drama'},
-  {id: 2, name: 'Comedy'}
-];
-
-
-router.get('/', (req, res) => {
-  res.send(JSON.stringify(genres));
+router.get('/', async (req, res) => {
+  await Genre.find()
+      .then((genres) => res.status(200).send(JSON.stringify(genres)))
+      .catch((err) => res.status(500).send(err));
 });
 
 
-router.get('/:id', (req, res) => {
-  if (genres.find((genre) => genre.id == req.params.id)) {
-    res.send(JSON.stringify(genres.find((genre) => genre.id == req.params.id)));
+router.get('/:id', async (req, res) => {
+  const genre = await Genre.findById(req.params.id)
+      .catch((err) => res.status(500).send(err));
+
+  if (genre) {
+    res.status(200).end(JSON.stringify(genre));
   } else {
-    res.status(404).send('A genre with the given id cannot be found');
+    res.status(404).end('No genre was found with the given id');
   }
 });
 
 
-router.post('/', (req, res) => {
-  const newGenre = req.body;
-  if (genres.find((genre) =>
-    newGenre.name === genre.name || newGenre.id === genre.id)) {
-    res.status(400).send('genre with same id or name already exists');
-  } else {
-    if (!newGenre.id && genres.length > 0) {
-      newGenre.id = genres[genres.length - 1].id + 1;
-    } else if ( genres.length == 0 ) {
-      newGenre.id = 0;
-    }
-    genres.push(newGenre);
-    res.status(200).send(JSON.stringify(newGenre));
+router.post('/', async (req, res) => {
+  const {error} = validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
   }
+
+  const genre = new Genre(req.body);
+  await genre.save()
+      .then((genre) => res.status(200).send(JSON.stringify(genre)))
+      .catch((err) => res.status(500).send(err));
 });
 
 
-router.put('/:id', (req, res) => {
-  const targetGenreIndex =
-  genres.findIndex((genre) => req.params.id == genre.id);
+router.put('/:id', async (req, res) => {
+  const {error} = validate(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
 
-  if (targetGenreIndex != -1) {
-    genres[targetGenreIndex].name = req.body.name;
-    res.status(200).send(JSON.stringify(genres[targetGenreIndex]));
-  } else {
-    res.status(404).send('no genre with the provided id exists');
-  }
-});
+  const genre = await Genre.findByIdAndUpdate(req.params.id, {
+    name: req.body.name,
+    new: true,
+  }).catch((err) => res.status(500).send(err));
 
-
-router.delete('/:id', (req, res) => {
-  const targetGenreIndex =
-  genres.findIndex((genre) => req.params.id == genre.id);
-
-  if (targetGenreIndex != -1) {
-    res.status(200).send(JSON.stringify(genres.splice(targetGenreIndex, 1)));
+  if (genre) {
+    res.status(200).send(JSON.stringify(genre));
   } else {
     res.status(404).send('no genre with the provided id exists');
   }
 });
 
+
+router.delete('/:id', async (req, res) => {
+  const genre = Genre.findByIdAndRemove(req.params.id)
+      .catch((err) => res.status(500).send(err));
+
+  if (genre) {
+    res.status(200).send(JSON.stringify(genre));
+  } else {
+    res.status(404).send('no genre with the provided id exists');
+  }
+});
 
 module.exports = router;
