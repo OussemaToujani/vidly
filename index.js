@@ -6,6 +6,7 @@ const logger = require('./logger');
 const home = require('./routes/home');
 const genres = require('./routes/genres');
 const customers = require('./routes/customers');
+const movies = require('./routes/movies');
 const mongoose = require('mongoose');
 const app = express();
 
@@ -32,6 +33,7 @@ if (app.get('env') === 'development') {
 app.use('/', home);
 app.use('/api/genres', genres);
 app.use('/api/customers', customers);
+app.use('/api/movies', movies);
 
 app.listen(port, () => {
   debug(`listening on port ${port}...`);
