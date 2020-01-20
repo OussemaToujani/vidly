@@ -3,29 +3,28 @@ const router = new express.Router();
 const {Movie, validate} = require('../models/Movie');
 const {Genre} = require('../models/Genre');
 const auth = require('../middleware/auth');
+const asyncWrapper = require('../middleware/async');
 const debug = require('debug')('app:movie');
 
 
-router.get('/', async (req, res) => {
-  await Movie.find()
-      .then((movies) => res.status(200).send(JSON.stringify(movies)))
-      .catch((err) => res.status(500).send(err));
-});
+router.get('/', asyncWrapper(async (req, res) => {
+  const movies = await Movie.find();
+  return res.status(200).send(JSON.stringify(movies));
+}));
 
 
-router.get('/:id', async (req, res) => {
-  const movie = await Movie.findById(req.params.id)
-      .catch((err) => res.status(500).send(err));
+router.get('/:id', asyncWrapper(async (req, res) => {
+  const movie = await Movie.findById(req.params.id);
 
   if (movie) {
     res.status(200).end(JSON.stringify(movie));
   } else {
     res.status(404).end('No movie was found with the given id');
   }
-});
+}));
 
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, asyncWrapper(async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -40,13 +39,12 @@ router.post('/', auth, async (req, res) => {
     numberInStock: req.body.numberInStock,
     dailyRentRate: req.body.dailyRentRate});
 
-  await movie.save()
-      .then((movie) => res.status(200).send(JSON.stringify(movie)))
-      .catch((err) => res.status(500).send(err));
-});
+  await movie.save();
+  return res.status(200).send(JSON.stringify(movie));
+}));
 
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, asyncWrapper(async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -60,25 +58,24 @@ router.put('/:id', auth, async (req, res) => {
       name: genre.name},
     numberInStock: req.body.numberInStock,
     dailyRentRate: req.body.dailyRentRate,
-    new: true}).catch((err) => res.status(500).send(err));
+    new: true});
 
   if (movie) {
     res.status(200).send(JSON.stringify(movie));
   } else {
     res.status(404).send('no movie with the provided id exists');
   }
-});
+}));
 
 
-router.delete('/:id', auth, async (req, res) => {
-  const movie = await Movie.findByIdAndRemove(req.params.id)
-      .catch((err) => res.status(500).send(err));
+router.delete('/:id', auth, asyncWrapper(async (req, res) => {
+  const movie = await Movie.findByIdAndRemove(req.params.id);
 
   if (movie) {
     res.status(200).send(JSON.stringify(movie));
   } else {
     res.status(404).send('no movie with the provided id exists');
   }
-});
+}));
 
 module.exports = router;

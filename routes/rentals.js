@@ -6,30 +6,29 @@ const {Rental, validate} = require('../models/Rental');
 const {Movie} = require('../models/Movie');
 const {Customer} = require('../models/Customer');
 const auth = require('../middleware/auth');
+const asyncWrapper = require('../middleware/async');
 const debug = require('debug')('app:movie');
 
 Fawn.init(mongoose);
 
-router.get('/', async (req, res) => {
-  await Rental.find().sort('-dateOut')
-      .then((rentals) => res.status(200).send(JSON.stringify(rentals)))
-      .catch((err) => res.status(500).send(err));
-});
+router.get('/', asyncWrapper(async (req, res) => {
+  const rentals = await Rental.find().sort('-dateOut');
+  return res.status(200).send(JSON.stringify(rentals));
+}));
 
 
-router.get('/:id', async (req, res) => {
-  const rental = await Rental.findById(req.params.id)
-      .catch((err) => res.status(500).send(err));
+router.get('/:id', asyncWrapper(async (req, res) => {
+  const rental = await Rental.findById(req.params.id);
 
   if (rental) {
     res.status(200).end(JSON.stringify(rental));
   } else {
     res.status(404).end('No rental was found with the given id');
   }
-});
+}));
 
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, asyncWrapper(async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -50,20 +49,16 @@ router.post('/', auth, async (req, res) => {
       dailyRentRate: movie.dailyRentRate},
   });
 
-  try {
-    new Fawn.Task()
-        .save('rentals', rental)
-        .update('movies', {_id: movie._id}, {
-          $inc: {numberInStock: -1}}).run();
+  new Fawn.Task()
+      .save('rentals', rental)
+      .update('movies', {_id: movie._id}, {
+        $inc: {numberInStock: -1}}).run();
 
-    res.status(200).send(JSON.stringify(rental));
-  } catch (e) {
-    res.status(500).send('Internal server error!');
-  }
-});
+  res.status(200).send(JSON.stringify(rental));
+}));
 
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, asyncWrapper(async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -82,25 +77,24 @@ router.put('/:id', auth, async (req, res) => {
       _id: movie._id,
       title: movie.title,
       dailyRentRate: movie.dailyRentRate},
-    new: true}).catch((err) => res.status(500).send(err));
+    new: true});
 
   if (rental) {
     res.status(200).send(JSON.stringify(rental));
   } else {
     res.status(404).send('no rental with the provided id exists');
   }
-});
+}));
 
 
-router.delete('/:id', auth, async (req, res) => {
-  const rental = await Rental.findByIdAndRemove(req.params.id)
-      .catch((err) => res.status(500).send(err));
+router.delete('/:id', auth, asyncWrapper(async (req, res) => {
+  const rental = await Rental.findByIdAndRemove(req.params.id);
 
   if (rental) {
     res.status(200).send(JSON.stringify(rental));
   } else {
     res.status(404).send('no rental with the provided id exists');
   }
-});
+}));
 
 module.exports = router;

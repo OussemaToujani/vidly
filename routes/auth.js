@@ -3,10 +3,11 @@ const bcrypt = require('bcrypt');
 const Joi = require('joi');
 const router = new express.Router();
 const {User} = require('../models/User');
+const asyncWrapper = require('../middleware/async');
 const debug = require('debug')('app:auth');
 
 
-router.post('/', async (req, res) => {
+router.post('/', asyncWrapper(async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -17,8 +18,8 @@ router.post('/', async (req, res) => {
 
   if (validPassword) {
     res.status(200).send(user.generateAuthToken());
-  } else res.status(500).send('Invalid email or password');
-});
+  } else res.status(400).send('Invalid email or password');
+}));
 
 /**
  * determine if an object is a valid req
