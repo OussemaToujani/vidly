@@ -1,16 +1,17 @@
 const express = require('express');
-const {Customer, validate} = require('../models/Customer');
 const router = new express.Router();
+const {Customer, validate} = require('../models/Customer');
+const auth = require('../middleware/auth');
 const debug = require('debug')('app:customer');
 
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   await Customer.find()
       .then((customers) => res.status(200).send(JSON.stringify(customers)))
       .catch((err) => res.status(500).send(err));
 });
 
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   const customer = await Customer.findById(req.params.id)
       .catch((err) => res.status(500).send(err));
 
@@ -22,7 +23,7 @@ router.get('/:id', async (req, res) => {
 });
 
 
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
 });
 
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -52,8 +53,8 @@ router.put('/:id', async (req, res) => {
 });
 
 
-router.delete('/:id', async (req, res) => {
-  const customer = Customer.findByIdAndRemove(req.params.id)
+router.delete('/:id', auth, async (req, res) => {
+  const customer = await Customer.findByIdAndRemove(req.params.id)
       .catch((err) => res.status(500).send(err));
 
   if (customer) {

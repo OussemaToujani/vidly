@@ -1,10 +1,11 @@
 const express = require('express');
-const {Rental, validate} = require('../models/Rental');
-const {Movie} = require('../models/Movie');
-const {Customer} = require('../models/Customer');
 const mongoose = require('mongoose');
 const Fawn = require('fawn');
 const router = new express.Router();
+const {Rental, validate} = require('../models/Rental');
+const {Movie} = require('../models/Movie');
+const {Customer} = require('../models/Customer');
+const auth = require('../middleware/auth');
 const debug = require('debug')('app:movie');
 
 Fawn.init(mongoose);
@@ -28,7 +29,7 @@ router.get('/:id', async (req, res) => {
 });
 
 
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -62,7 +63,7 @@ router.post('/', async (req, res) => {
 });
 
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   const {error} = validate(req.body);
   if (error) return res.status(400).send(error.details[0].message);
 
@@ -91,8 +92,8 @@ router.put('/:id', async (req, res) => {
 });
 
 
-router.delete('/:id', async (req, res) => {
-  const rental = Rental.findByIdAndRemove(req.params.id)
+router.delete('/:id', auth, async (req, res) => {
+  const rental = await Rental.findByIdAndRemove(req.params.id)
       .catch((err) => res.status(500).send(err));
 
   if (rental) {

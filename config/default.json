@@ -1,3 +1,4 @@
 {
-    "applicationName": "vidly" 
+    "applicationName": "vidly",
+    "jwtPrivateKey": ""
 }
