@@ -2,7 +2,7 @@ const express = require('express');
 const morgan = require('morgan');
 const config = require('config');
 const debug = require('debug')('app');
-const logger = require('./middleware/logger');
+// const logger = require('./middleware/logger');
 const home = require('./routes/home');
 const genres = require('./routes/genres');
 const customers = require('./routes/customers');
@@ -12,10 +12,28 @@ const users = require('./routes/users');
 const auth = require('./routes/auth');
 const error = require('./middleware/error');
 const mongoose = require('mongoose');
+const winston = require('winston');
+require('winston-mongodb');
 const Joi = require('joi');
 Joi.objectId = require('joi-objectid')(Joi);
-
 const app = express();
+
+winston.add(
+    new winston.transports.File({filename: 'vidly.log', level: 'info'})
+);
+
+process.on('uncaughtException', (ex) => {
+  debug('Uncaught Exception!');
+  winston.error(ex.message, ex);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (ex) => {
+  debug('Unhandled Rejection!');
+  winston.error(ex.message, ex);
+  process.exit(1);
+});
+
 
 if (!config.get('jwtPrivateKey')) {
   console.error('FATAL ERROR: jwtPrivateKey is not defined.');
