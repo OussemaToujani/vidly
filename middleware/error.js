@@ -10,7 +10,7 @@ const logger = winston.createLogger({
   ],
 });
 
-// winston.add(new winston.transports.MongoDB({db: 'mongodb://localhost/vidly', level: 'info'}));
+winston.add(new winston.transports.MongoDB({db: 'mongodb://localhost/vidly', level: 'info'}));
 
 module.exports = function(err, req, res, next) {
   logger.error(err.message, err);
